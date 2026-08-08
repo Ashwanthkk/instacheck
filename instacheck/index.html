@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InstaCheck - Privacy-First Instagram Non-Follower Tracker</title>
+  <meta name="description"
+    content="Find who unfollowed you on Instagram without giving away your password. 100% browser-based & secure.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link rel="stylesheet" href="/asset/css/styles.css">
+</head>
+
+<body class="bg-[#0b0e14] text-gray-100 min-h-screen flex flex-col">
+
+  <!-- Responsive Navigation -->
+  <header class="sticky top-0 z-50 glass-panel rounded-none border-x-0 border-t-0">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <a href="/" class="flex items-center space-x-2">
+        <span class="text-2xl font-extrabold text-gradient">InstaCheck</span>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex space-x-6 text-sm font-medium">
+        <a href="/" class="text-purple-400 font-bold">Dashboard</a>
+        <a href="/how-it-works.html" class="hover:text-purple-400 transition">How It Works</a>
+        <a href="/privacy-architecture.html" class="hover:text-purple-400 transition">Privacy Architecture</a>
+        <a href="/faq.html" class="hover:text-purple-400 transition">FAQ</a>
+        <a href="/blog.html" class="hover:text-purple-400 transition">Guides</a>
+        <a href="/contact.html" class="hover:text-purple-400 transition">Support</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+    <!-- Top Ad Banner Placeholder -->
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest">
+      Responsive Advertisement Banner Slot #1
+    </div>
+
+    <!-- Hero / Upload Section -->
+    <section class="my-8 text-center max-w-3xl mx-auto">
+      <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4">
+        Track Instagram Non-Followers <br><span class="text-gradient">Without Giving Away Passwords</span>
+      </h1>
+      <p class="text-gray-400 text-sm sm:text-base mb-8">
+        100% private instant client-side processing. Your Instagram data is parsed entirely in local browser memory.
+        Zero logins, zero data uploads.
+      </p>
+
+      <!-- Upload Form -->
+      <form id="upload-form"
+        class="glass-panel p-6 sm:p-10 border-2 border-dashed border-gray-700 hover:border-purple-500/50 transition flex flex-col items-center justify-center">
+        <svg class="w-12 h-12 text-purple-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+        </svg>
+        <p class="text-base font-medium text-gray-200 mb-2">Drag and drop your Instagram export <code
+            class="bg-gray-800 px-2 py-1 rounded text-purple-300">.zip</code> file</p>
+        <p class="text-xs text-gray-400 mb-6">Select your file below and click process</p>
+
+        <input type="file" name="zip_file" id="zip-file-input" accept=".zip" required
+          class="mb-4 text-xs text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-900/50 file:text-purple-300 hover:file:bg-purple-900">
+        <button type="submit" id="submit-btn"
+          class="cursor-pointer bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold px-6 py-3 rounded-lg shadow-lg hover:opacity-90 transition">
+          Process ZIP File
+        </button>
+      </form>
+
+      <!-- Status Indicator -->
+      <div id="status-container"
+        class="hidden mt-6 glass-panel p-4 text-center text-sm text-purple-300 flex items-center justify-center space-x-2">
+        <svg class="animate-spin h-5 w-5 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+          viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+          </path>
+        </svg>
+        <span id="status-text">Processing ZIP file...</span>
+      </div>
+
+      <!-- Error Banner -->
+      <div id="error-container"
+        class="hidden mt-6 p-4 rounded-lg bg-red-900/40 border border-red-500/50 text-red-200 text-sm text-center">
+      </div>
+    </section>
+
+    <!-- Bottom Ad Banner Placeholder -->
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest">
+      Responsive Advertisement Banner Slot #2
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="glass-panel rounded-none border-x-0 border-b-0 mt-auto py-6">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-gray-400 space-y-3">
+      <div class="flex justify-center space-x-6">
+        <a href="/privacy-architecture.html" class="hover:underline">Privacy Policy</a>
+        <a href="/how-it-works.html" class="hover:underline">How It Works</a>
+        <a href="/faq.html" class="hover:underline">FAQ</a>
+        <a href="/contact.html" class="hover:underline">Contact Developer</a>
+      </div>
+      <p>© InstaCheck. Independent open utility. Not affiliated with Instagram or Meta Platforms, Inc.</p>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fileInput = document.getElementById('zip-file-input');
+      const submitBtn = document.getElementById('submit-btn');
+      const statusContainer = document.getElementById('status-container');
+      const statusText = document.getElementById('status-text');
+      const errorContainer = document.getElementById('error-container');
+
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      errorContainer.classList.add('hidden');
+      statusContainer.classList.remove('hidden');
+      statusText.textContent = "Processing ZIP file in memory...";
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+      try {
+        const zip = await JSZip.loadAsync(file);
+
+        let followerData = [];
+        let followingData = null;
+        let hasHtmlFiles = false;
+
+        for (const path of Object.keys(zip.files)) {
+          if (zip.files[path].dir) continue;
+
+          const parts = path.split('/');
+          const filename = parts[parts.length - 1].toLowerCase();
+
+          if (filename.endsWith('.html') && (filename.startsWith('followers') || filename.startsWith('following'))) {
+            hasHtmlFiles = true;
+          }
+
+          if (filename.endsWith('.json') && filename.startsWith('followers')) {
+            const text = await zip.files[path].async('string');
+            const parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) followerData.push(...parsed);
+            else if (parsed && typeof parsed === 'object') followerData.push(parsed);
+          } else if (filename.endsWith('.json') && filename.startsWith('following')) {
+            const text = await zip.files[path].async('string');
+            const parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) followingData = parsed;
+            else if (parsed && typeof parsed === 'object') followingData = parsed;
+          }
+        }
+
+        if (hasHtmlFiles && (!followerData.length || !followingData)) {
+          throw new Error('HTML files are not supported. Please upload JSON files from your Instagram export ZIP.');
+        }
+
+        if (!followerData.length || !followingData) {
+          throw new Error('Could not find followers or following JSON files in the uploaded ZIP.');
+        }
+
+        // Extract Followers Map { username: href }
+        const followersMap = {};
+        followerData.forEach(person => {
+          if (!person || typeof person !== 'object') return;
+          const listData = person.string_list_data || [person];
+          listData.forEach(item => {
+            if (!item || typeof item !== 'object') return;
+            const username = String(item.value || item.title || '').trim().toLowerCase();
+            const href = String(item.href || (username ? `https://www.instagram.com/${username}/` : ''));
+            if (username) followersMap[username] = href;
+          });
+        });
+
+        // Extract Following Map { username: href }
+        let relationships = [];
+        if (Array.isArray(followingData)) {
+          relationships = followingData;
+        } else if (followingData && typeof followingData === 'object') {
+          relationships = followingData.relationships_following || followingData.following || [];
+        }
+
+        const followingMap = {};
+        relationships.forEach(person => {
+          if (!person || typeof person !== 'object') return;
+          const username = String(person.title || person.value || '').trim().toLowerCase();
+          const stringData = person.string_list_data || [person];
+          let href = '';
+          if (stringData.length && stringData[0] && stringData[0].href) {
+            href = String(stringData[0].href);
+          } else if (username) {
+            href = `https://www.instagram.com/${username}/`;
+          }
+          if (username) followingMap[username] = href;
+        });
+
+        const nonFollowers = [];
+        Object.keys(followingMap).sort().forEach(user => {
+          if (!followersMap[user]) {
+            nonFollowers.push(followingMap[user]);
+          }
+        });
+
+        const totalFollowers = Object.keys(followersMap).length;
+        const totalFollowing = Object.keys(followingMap).length;
+        const nonFollowerCount = nonFollowers.length;
+
+        sessionStorage.setItem('instacheck_results', JSON.stringify({
+          non_followers: nonFollowers,
+          total_followers: totalFollowers,
+          total_following: totalFollowing,
+          non_follower_count: nonFollowerCount
+        }));
+
+        window.location.href = '/results.html';
+
+      } catch (err) {
+        statusContainer.classList.add('hidden');
+        errorContainer.classList.remove('hidden');
+        errorContainer.textContent = (err.message || err);
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    });
+  </script>
+</body>
+
+</html>

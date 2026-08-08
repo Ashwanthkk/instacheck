@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ & Safety Guidelines - InstaCheck</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/asset/css/styles.css">
+</head>
+<body class="bg-[#0b0e14] text-gray-100 min-h-screen flex flex-col">
+
+  <header class="sticky top-0 z-50 glass-panel rounded-none border-x-0 border-t-0">
+    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+      <a href="index.html" class="text-2xl font-extrabold text-gradient">InstaCheck</a>
+      <nav class="hidden md:flex space-x-6 text-sm font-medium">
+        <a href="index.html" class="hover:text-purple-400">Dashboard</a>
+        <a href="how-it-works.html" class="hover:text-purple-400">How It Works</a>
+        <a href="privacy-architecture.html" class="hover:text-purple-400">Privacy Architecture</a>
+        <a href="faq.html" class="text-purple-400 font-bold">FAQ</a>
+        <a href="blog.html" class="hover:text-purple-400">Guides</a>
+        <a href="contact.html" class="hover:text-purple-400">Support</a>
+      </nav>
+      <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-300">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+      </button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden px-4 pb-4 pt-2 space-y-2 border-t border-gray-800 bg-[#0b0e14]">
+      <a href="index.html" class="block py-2">Dashboard</a>
+      <a href="how-it-works.html" class="block py-2">How It Works</a>
+      <a href="privacy-architecture.html" class="block py-2">Privacy Architecture</a>
+      <a href="faq.html" class="block py-2 text-purple-400 font-bold">FAQ</a>
+      <a href="blog.html" class="block py-2">Guides</a>
+      <a href="contact.html" class="block py-2">Support</a>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-4xl mx-auto px-4 py-8 w-full">
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest">Ad Banner Slot</div>
+
+    <h1 class="text-3xl font-extrabold mb-6 text-gradient">Frequently Asked Questions</h1>
+
+    <div class="space-y-4">
+      <details class="glass-panel p-4 rounded-xl group cursor-pointer">
+        <summary class="font-semibold text-base flex justify-between items-center text-white">
+          Is it safe to manual unfollow users on Instagram?
+          <span class="text-purple-400 group-open:rotate-180 transition">▼</span>
+        </summary>
+        <p class="mt-3 text-sm text-gray-300 leading-relaxed">
+          Yes, as long as you adhere to Instagram's speed limits. To prevent temporary action blocks, do not unfollow more than <strong>10–20 accounts per hour</strong> manually. Automated unfollow bots will trigger security blocks.
+        </p>
+      </details>
+
+      <details class="glass-panel p-4 rounded-xl group cursor-pointer">
+        <summary class="font-semibold text-base flex justify-between items-center text-white">
+          Why does InstaCheck state 0 followers after I upload?
+          <span class="text-purple-400 group-open:rotate-180 transition">▼</span>
+        </summary>
+        <p class="mt-3 text-sm text-gray-300 leading-relaxed">
+          Make sure when requesting your archive from Instagram Meta Accounts Center that you selected "Connections" data. If you downloaded media only, follower files will not exist in the archive.
+        </p>
+      </details>
+
+      <details class="glass-panel p-4 rounded-xl group cursor-pointer">
+        <summary class="font-semibold text-base flex justify-between items-center text-white">
+          Is my Instagram data saved anywhere?
+          <span class="text-purple-400 group-open:rotate-180 transition">▼</span>
+        </summary>
+        <p class="mt-3 text-sm text-gray-300 leading-relaxed">
+          No. All data processing occurs strictly in your device's browser memory (RAM). Once you close or refresh this webpage, all data is permanently cleared.
+        </p>
+      </details>
+    </div>
+
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest">Ad Banner Slot</div>
+  </main>
+
+  <footer class="glass-panel rounded-none border-x-0 border-b-0 mt-auto py-6 text-center text-xs text-gray-400">
+    <p>© <span id="current-year"></span> InstaCheck. Safety Guidelines & Support.</p>
+  </footer>
+
+</body>
+</html>

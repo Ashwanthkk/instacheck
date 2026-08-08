@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InstaCheck — Production Test Suite</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: #0d1117; color: #c9d1d9; padding: 24px; }
+    h1 { font-size: 1.5rem; margin-bottom: 16px; color: #58a6ff; }
+    h2 { font-size: 1.1rem; margin: 20px 0 8px; color: #8b949e; border-bottom: 1px solid #21262d; padding-bottom: 4px; }
+    .summary { font-size: 1rem; margin-bottom: 20px; padding: 16px; border-radius: 8px; }
+    .summary.pass { background: #0d1d0d; border: 1px solid #238636; color: #3fb950; }
+    .summary.fail { background: #1d0d0d; border: 1px solid #da3633; color: #f85149; }
+    .summary.running { background: #1d1d0d; border: 1px solid #d29922; color: #e3b341; }
+    .test-result { padding: 6px 12px; margin: 2px 0; border-radius: 4px; font-size: 0.85rem; font-family: 'Fira Code', 'Consolas', monospace; }
+    .test-result.pass { background: #0d1d0d; border-left: 3px solid #238636; }
+    .test-result.fail { background: #1d0d0d; border-left: 3px solid #da3633; }
+    .pass-icon::before { content: '✅ '; }
+    .fail-icon::before { content: '❌ '; }
+    #run-btn { 
+      background: linear-gradient(135deg, #238636, #2ea043); 
+      color: white; border: none; padding: 10px 24px; border-radius: 6px; 
+      font-size: 0.9rem; cursor: pointer; margin-bottom: 16px;
+    }
+    #run-btn:hover { opacity: 0.9; }
+    #run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<!-- Hidden DOM elements required by InstaCheckApp -->
+<div style="display:none;">
+  <div id="drop-zone"></div>
+  <input type="file" id="zip-file-input">
+  <div id="status-container" class="hidden"><p id="status-text"></p></div>
+  <div id="dashboard" class="hidden">
+    <p id="stat-followers">0</p>
+    <p id="stat-following">0</p>
+    <p id="stat-nonfollowers">0</p>
+    <input type="text" id="search-input">
+    <select id="filter-select">
+      <option value="all">Show All</option>
+      <option value="non-whitelisted">Non-Whitelisted</option>
+      <option value="whitelisted">Whitelisted Only</option>
+    </select>
+    <button id="export-csv-btn">Export CSV</button>
+    <div id="results-grid"></div>
+  </div>
+  <button id="demo-mode-btn">Demo</button>
+</div>
+
+<h1>🧪 InstaCheck Production Test Suite</h1>
+<div id="summary" class="summary running">Running tests...</div>
+<button id="run-btn" onclick="runAllTests()">▶ Re-Run All Tests</button>
+<div id="results"></div>
+
+<script>
+/**
+ * Lightweight test harness
+ */
+class TestRunner {
+  constructor() {
+    this.results = [];
+    this.sections = [];
+    this.currentSection = null;
+  }
+
+  section(name) {
+    this.currentSection = name;
+    this.sections.push({ name, tests: [] });
+  }
+
+  assert(description, condition) {
+    const result = { description, passed: !!condition, section: this.currentSection };
+    this.results.push(result);
+    this.sections[this.sections.length - 1].tests.push(result);
+  }
+
+  assertEqual(description, actual, expected) {
+    const passed = JSON.stringify(actual) === JSON.stringify(expected);
+    const result = {
+      description: passed ? description : `${description} — expected: ${JSON.stringify(expected)}, got: ${JSON.stringify(actual)}`,
+      passed,
+      section: this.currentSection
+    };
+    this.results.push(result);
+    this.sections[this.sections.length - 1].tests.push(result);
+  }
+
+  assertNotEqual(description, actual, notExpected) {
+    const passed = JSON.stringify(actual) !== JSON.stringify(notExpected);
+    const result = {
+      description: passed ? description : `${description} — should NOT be: ${JSON.stringify(notExpected)}`,
+      passed,
+      section: this.currentSection
+    };
+    this.results.push(result);
+    this.sections[this.sections.length - 1].tests.push(result);
+  }
+
+  assertContains(description, str, substring) {
+    const passed = typeof str === 'string' && str.includes(substring);
+    const result = {
+      description: passed ? description : `${description} — "${str}" does not contain "${substring}"`,
+      passed,
+      section: this.currentSection
+    };
+    this.results.push(result);
+    this.sections[this.sections.length - 1].tests.push(result);
+  }
+
+  assertThrows(description, fn) {
+    let threw = false;
+    try { fn(); } catch (e) { threw = true; }
+    this.assert(description, threw);
+  }
+
+  assertDoesNotThrow(description, fn) {
+    let threw = false;
+    try { fn(); } catch (e) { threw = true; }
+    this.assert(description, !threw);
+  }
+
+  render() {
+    const container = document.getElementById('results');
+    const summary = document.getElementById('summary');
+    const total = this.results.length;
+    const passed = this.results.filter(r => r.passed).length;
+    const failed = total - passed;
+
+    summary.className = `summary ${failed > 0 ? 'fail' : 'pass'}`;
+    summary.innerHTML = `<strong>${passed}/${total}</strong> tests passed${failed > 0 ? ` — <strong>${failed} FAILED</strong>` : ' — All green! ✅'}`;
+
+    let html = '';
+    for (const section of this.sections) {
+      const sectionFailed = section.tests.some(t => !t.passed);
+      html += `<h2>${sectionFailed ? '❌' : '✅'} ${section.name}</h2>`;
+      for (const test of section.tests) {
+        html += `<div class="test-result ${test.passed ? 'pass' : 'fail'}">
+          <span class="${test.passed ? 'pass-icon' : 'fail-icon'}"></span>${test.description}
+        </div>`;
+      }
+    }
+    container.innerHTML = html;
+  }
+}
+
+function freshApp() {
+  // Clear localStorage before creating a fresh instance
+  localStorage.removeItem('instacheck_whitelist');
+  return new InstaCheckApp();
+}
+
+function runAllTests() {
+  document.getElementById('run-btn').disabled = true;
+  const t = new TestRunner();
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 1: Username Normalization
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Username Normalization');
+  {
+    const app = freshApp();
+    t.assertEqual('Lowercase conversion', app.normalizeUsername('TechGuru'), 'techguru');
+    t.assertEqual('Strip leading @', app.normalizeUsername('@john_doe'), 'john_doe');
+    t.assertEqual('Strip whitespace', app.normalizeUsername('  user name  '), 'username');
+    t.assertEqual('Strip tabs and mixed space', app.normalizeUsername('\t user\t'), 'user');
+    t.assertEqual('Handle null', app.normalizeUsername(null), '');
+    t.assertEqual('Handle undefined', app.normalizeUsername(undefined), '');
+    t.assertEqual('Handle empty string', app.normalizeUsername(''), '');
+    t.assertEqual('Handle numeric input (non-string)', app.normalizeUsername(12345), '');
+    t.assertEqual('Handle boolean input', app.normalizeUsername(true), '');
+    t.assertEqual('Unicode username', app.normalizeUsername('@Ünïcödé_User'), 'ünïcödé_user');
+    t.assertEqual('Multiple @ signs', app.normalizeUsername('@@double_at'), '@double_at');
+    t.assertEqual('Only whitespace', app.normalizeUsername('   '), '');
+    t.assertEqual('Already normalized', app.normalizeUsername('clean_user'), 'clean_user');
+    t.assertEqual('Dots and underscores preserved', app.normalizeUsername('user.name_123'), 'user.name_123');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 2: Clean Username (Display)
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Clean Username (Display)');
+  {
+    const app = freshApp();
+    t.assertEqual('Preserve casing', app.cleanUsername('TechGuru'), 'TechGuru');
+    t.assertEqual('Strip leading @', app.cleanUsername('@John_Doe'), 'John_Doe');
+    t.assertEqual('Trim whitespace', app.cleanUsername('  user  '), 'user');
+    t.assertEqual('Handle null', app.cleanUsername(null), '');
+    t.assertEqual('Handle undefined', app.cleanUsername(undefined), '');
+    t.assertEqual('Handle empty string', app.cleanUsername(''), '');
+    t.assertEqual('Handle non-string', app.cleanUsername(42), '');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 3: Profile URL Generation (CRITICAL BUG FIX)
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Profile URL Generation (Bug Fix Validation)');
+  {
+    const app = freshApp();
+    
+    // The core bug: URLs must be valid Instagram profile URLs
+    t.assertEqual('Normal username produces valid Instagram URL', 
+      app.getProfileUrl('techguru'), 'https://www.instagram.com/techguru/');
+    
+    t.assertContains('URL starts with https://www.instagram.com/', 
+      app.getProfileUrl('anyuser'), 'https://www.instagram.com/');
+    
+    t.assertEqual('Username with dots', 
+      app.getProfileUrl('user.name'), 'https://www.instagram.com/user.name/');
+    
+    t.assertEqual('Username with underscore', 
+      app.getProfileUrl('user_name'), 'https://www.instagram.com/user_name/');
+    
+    t.assertEqual('Username with leading @', 
+      app.getProfileUrl('@techguru'), 'https://www.instagram.com/techguru/');
+    
+    t.assertEqual('Empty username fallback', 
+      app.getProfileUrl(''), 'https://www.instagram.com/');
+    
+    t.assertEqual('Null username fallback', 
+      app.getProfileUrl(null), 'https://www.instagram.com/');
+    
+    t.assertEqual('Undefined username fallback', 
+      app.getProfileUrl(undefined), 'https://www.instagram.com/');
+    
+    // Security: XSS prevention
+    t.assertEqual('XSS attempt with script tags stripped', 
+      app.getProfileUrl('<script>alert(1)</script>'), 'https://www.instagram.com/scriptalert1script/');
+    
+    t.assertEqual('Special chars stripped from URL', 
+      app.getProfileUrl('user/../../etc/passwd'), 'https://www.instagram.com/user..etcpasswd/');
+    
+    t.assertEqual('URL-like injection stripped',
+      app.getProfileUrl('javascript:alert(1)'), 'https://www.instagram.com/javascriptalert1/');
+
+    // Must not generate a relative URL (was the original 404 bug)
+    const url = app.getProfileUrl('testuser');
+    t.assert('URL is not relative (starts with https://)', url.startsWith('https://'));
+    t.assert('URL does not start with {', !url.startsWith('{'));
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 4: Follower Parsing — JSON Format
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Follower Parsing — JSON Format');
+  {
+    // Standard Instagram JSON export format (modern)
+    const app1 = freshApp();
+    const standardJSON = JSON.stringify([
+      { string_list_data: [{ href: "https://www.instagram.com/user1", value: "user1", timestamp: 1690000000 }] },
+      { string_list_data: [{ href: "https://www.instagram.com/user2", value: "user2", timestamp: 1690000001 }] },
+      { string_list_data: [{ href: "https://www.instagram.com/user3", value: "User3", timestamp: 1690000002 }] }
+    ]);
+    app1.parseFollowers(standardJSON, false);
+    t.assertEqual('Standard format: correct count', app1.followers.size, 3);
+    t.assert('Standard format: user1 present', app1.followers.has('user1'));
+    t.assert('Standard format: user2 present', app1.followers.has('user2'));
+    t.assert('Standard format: user3 normalized to lowercase', app1.followers.has('user3'));
+
+    // relationships_followers wrapper
+    const app2 = freshApp();
+    const wrappedJSON = JSON.stringify({
+      relationships_followers: [
+        { string_list_data: [{ value: "wrapped_user1" }] },
+        { string_list_data: [{ value: "wrapped_user2" }] }
+      ]
+    });
+    app2.parseFollowers(wrappedJSON, false);
+    t.assertEqual('Wrapped format: correct count', app2.followers.size, 2);
+    t.assert('Wrapped format: wrapped_user1 present', app2.followers.has('wrapped_user1'));
+
+    // Simple string array
+    const app3 = freshApp();
+    app3.parseFollowers(JSON.stringify(["stringuser1", "StringUser2", "@stringuser3"]), false);
+    t.assertEqual('String array format: correct count', app3.followers.size, 3);
+    t.assert('String array: stringuser1 present', app3.followers.has('stringuser1'));
+    t.assert('String array: case-normalized', app3.followers.has('stringuser2'));
+    t.assert('String array: @ stripped', app3.followers.has('stringuser3'));
+
+    // Object with username property
+    const app4 = freshApp();
+    app4.parseFollowers(JSON.stringify([
+      { username: "objuser1" },
+      { username: "ObjUser2" }
+    ]), false);
+    t.assertEqual('Object with username: correct count', app4.followers.size, 2);
+    t.assert('Object with username: objuser1 present', app4.followers.has('objuser1'));
+    t.assert('Object with username: case-normalized', app4.followers.has('objuser2'));
+
+    // Empty / malformed data
+    const app5 = freshApp();
+    app5.parseFollowers('', false);
+    t.assertEqual('Empty string: no followers added', app5.followers.size, 0);
+
+    const app6 = freshApp();
+    app6.parseFollowers(null, false);
+    t.assertEqual('Null content: no followers added', app6.followers.size, 0);
+
+    const app7 = freshApp();
+    app7.parseFollowers('not json at all {{{', false);
+    t.assertEqual('Malformed JSON: no crash, no followers added', app7.followers.size, 0);
+
+    const app8 = freshApp();
+    app8.parseFollowers(JSON.stringify([]), false);
+    t.assertEqual('Empty array: no followers added', app8.followers.size, 0);
+
+    // Entries with empty/null values (should be skipped)
+    const app9 = freshApp();
+    app9.parseFollowers(JSON.stringify([
+      { string_list_data: [{ value: "" }] },
+      { string_list_data: [{ value: null }] },
+      { string_list_data: [{ value: "valid_user" }] },
+      { string_list_data: [] },
+      { string_list_data: null },
+      null,
+      undefined
+    ]), false);
+    t.assertEqual('Mixed valid/invalid entries: only valid counted', app9.followers.size, 1);
+    t.assert('Mixed entries: valid_user present', app9.followers.has('valid_user'));
+
+    // Multiple string_list_data entries per item
+    const app10 = freshApp();
+    app10.parseFollowers(JSON.stringify([
+      { string_list_data: [
+        { value: "multi_user1" },
+        { value: "multi_user2" }
+      ]}
+    ]), false);
+    t.assertEqual('Multiple string_list_data entries: both counted', app10.followers.size, 2);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 5: Following Parsing — JSON Format
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Following Parsing — JSON Format');
+  {
+    const app1 = freshApp();
+    const followingJSON = JSON.stringify({
+      relationships_following: [
+        { string_list_data: [{ value: "followed1", timestamp: 1690000000 }] },
+        { string_list_data: [{ value: "followed2", timestamp: 1690000001 }] }
+      ]
+    });
+    app1.parseFollowing(followingJSON, false);
+    t.assertEqual('Standard following: correct count', app1.following.length, 2);
+    t.assertEqual('Following preserves display username', app1.following[0].username, 'followed1');
+    t.assertEqual('Following has normalized username', app1.following[0].normalizedUsername, 'followed1');
+    t.assert('Following has timestamp', app1.following[0].timestamp === 1690000000);
+
+    // Array format
+    const app2 = freshApp();
+    app2.parseFollowing(JSON.stringify([
+      { string_list_data: [{ value: "arr_user1" }] },
+      { string_list_data: [{ value: "arr_user2" }] }
+    ]), false);
+    t.assertEqual('Array format: correct count', app2.following.length, 2);
+
+    // Empty / null
+    const app3 = freshApp();
+    app3.parseFollowing('', false);
+    t.assertEqual('Empty string: no following added', app3.following.length, 0);
+
+    const app4 = freshApp();
+    app4.parseFollowing(null, false);
+    t.assertEqual('Null content: no following added', app4.following.length, 0);
+
+    const app5 = freshApp();
+    app5.parseFollowing('invalid json!!!', false);
+    t.assertEqual('Invalid JSON: no crash, no following added', app5.following.length, 0);
+
+    // With @-prefixed values
+    const app6 = freshApp();
+    app6.parseFollowing(JSON.stringify({
+      relationships_following: [
+        { string_list_data: [{ value: "@at_user" }] }
+      ]
+    }), false);
+    t.assertEqual('Following strips @ for display', app6.following[0].username, 'at_user');
+    t.assertEqual('Following strips @ for normalized', app6.following[0].normalizedUsername, 'at_user');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 6: Follower Parsing — HTML Format
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Follower Parsing — HTML Format');
+  {
+    const app1 = freshApp();
+    const html = '<html><body><a href="https://www.instagram.com/html_user1">html_user1</a><a href="https://www.instagram.com/html_user2">html_user2</a></body></html>';
+    app1.parseFollowers(html, true);
+    t.assertEqual('HTML format: correct count', app1.followers.size, 2);
+    t.assert('HTML: html_user1 present', app1.followers.has('html_user1'));
+    t.assert('HTML: html_user2 present', app1.followers.has('html_user2'));
+
+    // HTML with text mismatch (href wins when textContent is empty)
+    const app2 = freshApp();
+    const html2 = '<a href="https://www.instagram.com/href_user"></a>';
+    app2.parseFollowers(html2, true);
+    t.assert('HTML fallback to href when text empty', app2.followers.has('href_user'));
+
+    // Ignore non-profile Instagram routes like explore and login
+    const app3 = freshApp();
+    const html3 = '<a href="https://www.instagram.com/explore/">Explore</a><a href="https://www.instagram.com/accounts/login/">Login</a><a href="https://www.instagram.com/real_user/">real_user</a>';
+    app3.parseFollowers(html3, true);
+    t.assertEqual('HTML ignores non-profile routes', app3.followers.size, 1);
+    t.assert('HTML keeps legitimate profile links', app3.followers.has('real_user'));
+
+    // Relative and protocol-less Instagram links should still parse correctly
+    const app4 = freshApp();
+    const html4 = '<a href="/friendly_user/">friendly_user</a><a href="instagram.com/another_user">another_user</a>';
+    app4.parseFollowers(html4, true);
+    t.assertEqual('HTML parses relative and protocol-less profile links', app4.followers.size, 2);
+    t.assert('HTML parses relative profile links', app4.followers.has('friendly_user'));
+    t.assert('HTML parses protocol-less profile links', app4.followers.has('another_user'));
+
+    // Empty HTML
+    const app5 = freshApp();
+    app5.parseFollowers('<html><body></body></html>', true);
+    t.assertEqual('Empty HTML: no followers', app5.followers.size, 0);
+
+    // HTML with no links
+    const app6 = freshApp();
+    app6.parseFollowers('<html><body><p>No links here</p></body></html>', true);
+    t.assertEqual('HTML with no links: no followers', app6.followers.size, 0);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 7: Non-Followers Computation (CORE LOGIC)
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Non-Followers Computation (Core Logic)');
+  {
+    // Basic case: some follow back, some don't
+    const app1 = freshApp();
+    app1.followers = new Set(['alice', 'bob', 'charlie']);
+    app1.following = [
+      { username: 'alice', normalizedUsername: 'alice' },
+      { username: 'bob', normalizedUsername: 'bob' },
+      { username: 'dave', normalizedUsername: 'dave' },
+      { username: 'eve', normalizedUsername: 'eve' }
+    ];
+    app1.processNonFollowers();
+    t.assertEqual('Basic: 2 non-followers (dave, eve)', app1.nonFollowers.length, 2);
+    t.assert('Basic: dave is non-follower', app1.nonFollowers.some(u => u.normalizedUsername === 'dave'));
+    t.assert('Basic: eve is non-follower', app1.nonFollowers.some(u => u.normalizedUsername === 'eve'));
+    t.assert('Basic: alice NOT in non-followers (she follows back)', !app1.nonFollowers.some(u => u.normalizedUsername === 'alice'));
+    t.assert('Basic: bob NOT in non-followers (he follows back)', !app1.nonFollowers.some(u => u.normalizedUsername === 'bob'));
+
+    // Case insensitivity
+    const app2 = freshApp();
+    app2.followers = new Set(['alice', 'bob']);
+    app2.following = [
+      { username: 'Alice', normalizedUsername: 'alice' },
+      { username: 'BOB', normalizedUsername: 'bob' },
+      { username: 'Charlie', normalizedUsername: 'charlie' }
+    ];
+    app2.processNonFollowers();
+    t.assertEqual('Case insensitive: only Charlie is non-follower', app2.nonFollowers.length, 1);
+    t.assert('Case insensitive: Alice recognized as follower', !app2.nonFollowers.some(u => u.normalizedUsername === 'alice'));
+
+    // Everyone follows back
+    const app3 = freshApp();
+    app3.followers = new Set(['a', 'b', 'c']);
+    app3.following = [
+      { username: 'a', normalizedUsername: 'a' },
+      { username: 'b', normalizedUsername: 'b' },
+      { username: 'c', normalizedUsername: 'c' }
+    ];
+    app3.processNonFollowers();
+    t.assertEqual('All follow back: zero non-followers', app3.nonFollowers.length, 0);
+
+    // Nobody follows back
+    const app4 = freshApp();
+    app4.followers = new Set();
+    app4.following = [
+      { username: 'x', normalizedUsername: 'x' },
+      { username: 'y', normalizedUsername: 'y' }
+    ];
+    app4.processNonFollowers();
+    t.assertEqual('Nobody follows back: all are non-followers', app4.nonFollowers.length, 2);
+
+    // Empty following list
+    const app5 = freshApp();
+    app5.followers = new Set(['a', 'b']);
+    app5.following = [];
+    app5.processNonFollowers();
+    t.assertEqual('Empty following: zero non-followers', app5.nonFollowers.length, 0);
+
+    // Empty followers set
+    const app6 = freshApp();
+    app6.followers = new Set();
+    app6.following = [];
+    app6.processNonFollowers();
+    t.assertEqual('Both empty: zero non-followers', app6.nonFollowers.length, 0);
+
+    // Deduplication of following list
+    const app7 = freshApp();
+    app7.followers = new Set(['alice']);
+    app7.following = [
+      { username: 'dave', normalizedUsername: 'dave' },
+      { username: 'Dave', normalizedUsername: 'dave' },  // duplicate
+      { username: 'DAVE', normalizedUsername: 'dave' },  // duplicate
+    ];
+    app7.processNonFollowers();
+    t.assertEqual('Dedup: only 1 unique non-follower', app7.nonFollowers.length, 1);
+    t.assertEqual('Dedup: following list deduped', app7.following.length, 1);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 8: Stats UI Update
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Stats UI Update');
+  {
+    const app = freshApp();
+    app.followers = new Set(['a', 'b', 'c']);
+    app.following = [
+      { username: 'a', normalizedUsername: 'a' },
+      { username: 'b', normalizedUsername: 'b' },
+      { username: 'd', normalizedUsername: 'd' },
+      { username: 'e', normalizedUsername: 'e' },
+      { username: 'f', normalizedUsername: 'f' }
+    ];
+    app.processNonFollowers();
+    t.assertEqual('Followers stat', document.getElementById('stat-followers').textContent, '3');
+    t.assertEqual('Following stat', document.getElementById('stat-following').textContent, '5');
+    t.assertEqual('Non-followers stat', document.getElementById('stat-nonfollowers').textContent, '3');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 9: Whitelist Toggle
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Whitelist Management');
+  {
+    const app = freshApp();
+    t.assertEqual('Initial whitelist empty', app.whitelisted.size, 0);
+
+    app.toggleWhitelist('testuser');
+    t.assert('After toggle: user whitelisted', app.whitelisted.has('testuser'));
+
+    app.toggleWhitelist('testuser');
+    t.assert('After second toggle: user removed', !app.whitelisted.has('testuser'));
+
+    // Persistence
+    app.toggleWhitelist('persist_user');
+    const stored = JSON.parse(localStorage.getItem('instacheck_whitelist') || '[]');
+    t.assert('Whitelist persisted to localStorage', stored.includes('persist_user'));
+
+    // Invalid inputs
+    app.toggleWhitelist(null);
+    app.toggleWhitelist(undefined);
+    app.toggleWhitelist('');
+    t.assertEqual('Invalid toggles ignored: size unchanged', app.whitelisted.size, 1);
+
+    // Clean up
+    localStorage.removeItem('instacheck_whitelist');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 10: Render Results & Card Generation
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Render Results & Card Generation');
+  {
+    const app = freshApp();
+    app.followers = new Set(['follower1']);
+    app.following = [
+      { username: 'nonfollower1', normalizedUsername: 'nonfollower1' },
+      { username: 'nonfollower2', normalizedUsername: 'nonfollower2' },
+      { username: 'follower1', normalizedUsername: 'follower1' }
+    ];
+    app.processNonFollowers();
+
+    const grid = document.getElementById('results-grid');
+    const cards = grid.querySelectorAll('.glass-panel');
+    t.assertEqual('Correct number of cards rendered', cards.length, 2);
+
+    // Check that profile links are valid
+    const links = grid.querySelectorAll('a[href*="instagram.com"]');
+    t.assert('Profile links present', links.length > 0);
+    links.forEach(link => {
+      t.assertContains(`Link href contains instagram.com: ${link.href}`, link.href, 'instagram.com');
+      t.assert(`Link href is absolute URL: ${link.href}`, link.href.startsWith('https://'));
+    });
+
+    // Search filter
+    app.searchInput = document.getElementById('search-input');
+    app.searchInput.value = 'nonfollower1';
+    app.renderResults();
+    const filtered = grid.querySelectorAll('.glass-panel');
+    t.assertEqual('Search filters results', filtered.length, 1);
+
+    // Clear search
+    app.searchInput.value = '';
+    app.renderResults();
+
+    // Empty state
+    app.searchInput.value = 'zzzznonexistent';
+    app.renderResults();
+    t.assertContains('No results message shown', grid.innerHTML, 'No records match');
+
+    // Reset
+    app.searchInput.value = '';
+    app.renderResults();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 11: Whitelist Filter in Results
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Whitelist Filter in Results');
+  {
+    const app = freshApp();
+    app.followers = new Set();
+    app.following = [
+      { username: 'wl_user1', normalizedUsername: 'wl_user1' },
+      { username: 'wl_user2', normalizedUsername: 'wl_user2' },
+      { username: 'wl_user3', normalizedUsername: 'wl_user3' }
+    ];
+    app.processNonFollowers();
+    app.toggleWhitelist('wl_user1');
+
+    // Filter: whitelisted only
+    const filterSelect = document.getElementById('filter-select');
+    filterSelect.value = 'whitelisted';
+    app.renderResults();
+    const grid = document.getElementById('results-grid');
+    let cards = grid.querySelectorAll('.glass-panel');
+    t.assertEqual('Whitelisted filter: 1 card', cards.length, 1);
+    t.assertContains('Whitelisted filter: correct user', grid.innerHTML, 'wl_user1');
+
+    // Filter: non-whitelisted
+    filterSelect.value = 'non-whitelisted';
+    app.renderResults();
+    cards = grid.querySelectorAll('.glass-panel');
+    t.assertEqual('Non-whitelisted filter: 2 cards', cards.length, 2);
+
+    // Filter: all
+    filterSelect.value = 'all';
+    app.renderResults();
+    cards = grid.querySelectorAll('.glass-panel');
+    t.assertEqual('All filter: 3 cards', cards.length, 3);
+
+    localStorage.removeItem('instacheck_whitelist');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 12: File Detection (Followers)
+  // ═══════════════════════════════════════════════════════════════
+  t.section('File Detection — Followers');
+  {
+    const app = freshApp();
+    // Should match
+    t.assert('followers_1.json matches', app._isFollowersFile('followers_1.json'));
+    t.assert('followers_2.json matches', app._isFollowersFile('followers_2.json'));
+    t.assert('followers_10.json matches', app._isFollowersFile('followers_10.json'));
+    t.assert('followers.json matches', app._isFollowersFile('followers.json'));
+    t.assert('followers.html matches', app._isFollowersFile('followers.html'));
+    t.assert('followers1.html matches', app._isFollowersFile('connections/followers_and_following/followers1.html'));
+    t.assert('nested path: connections/followers_1.json', app._isFollowersFile('connections/followers_and_following/followers_1.json'));
+
+    // Should NOT match
+    t.assert('following_1.json does NOT match followers', !app._isFollowersFile('following_1.json'));
+    t.assert('followers_log.json does NOT match', !app._isFollowersFile('followers_log.json'));
+    t.assert('my_followers.json does NOT match', !app._isFollowersFile('my_followers.json'));
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 13: File Detection (Following)
+  // ═══════════════════════════════════════════════════════════════
+  t.section('File Detection — Following');
+  {
+    const app = freshApp();
+    t.assert('following.json matches', app._isFollowingFile('following.json'));
+    t.assert('following.html matches', app._isFollowingFile('following.html'));
+    t.assert('following1.html matches', app._isFollowingFile('connections/following/following1.html'));
+    t.assert('following_1.json matches', app._isFollowingFile('following_1.json'));
+    t.assert('following_2.json matches', app._isFollowingFile('following_2.json'));
+    t.assert('nested path matches', app._isFollowingFile('connections/following.json'));
+
+    // Should NOT match
+    t.assert('followers_1.json does NOT match following', !app._isFollowingFile('followers_1.json'));
+    t.assert('following_log.json does NOT match', !app._isFollowingFile('following_log.json'));
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 14: Demo Mode
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Demo Mode');
+  {
+    const app = freshApp();
+    app.loadDemoData();
+    
+    // Demo data has 5 followers and 7 following
+    t.assertEqual('Demo: 5 followers loaded', app.followers.size, 5);
+    t.assertEqual('Demo: 7 following loaded', app.following.length, 7);
+    
+    // Non-followers: following - followers = ghost_account_1, crypto_influencer, travel_junkie99, brand_official, fitness_motivation
+    t.assertEqual('Demo: 5 non-followers computed', app.nonFollowers.length, 5);
+    
+    // Verify tech_guru and design_craft are NOT non-followers (they follow back)
+    t.assert('Demo: tech_guru is NOT a non-follower', !app.nonFollowers.some(u => u.normalizedUsername === 'tech_guru'));
+    t.assert('Demo: design_craft is NOT a non-follower', !app.nonFollowers.some(u => u.normalizedUsername === 'design_craft'));
+    
+    // Verify known non-followers
+    t.assert('Demo: ghost_account_1 IS a non-follower', app.nonFollowers.some(u => u.normalizedUsername === 'ghost_account_1'));
+    t.assert('Demo: crypto_influencer IS a non-follower', app.nonFollowers.some(u => u.normalizedUsername === 'crypto_influencer'));
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 15: Edge Cases — Large Data
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Edge Cases — Large Data');
+  {
+    const app = freshApp();
+    // Simulate 1000 followers, 1200 following with 200 non-followers
+    for (let i = 0; i < 1000; i++) {
+      app.followers.add(`user_${i}`);
+    }
+    for (let i = 0; i < 1200; i++) {
+      app.following.push({ username: `user_${i}`, normalizedUsername: `user_${i}` });
+    }
+    app.processNonFollowers();
+    t.assertEqual('Large dataset: 200 non-followers', app.nonFollowers.length, 200);
+    t.assertEqual('Large dataset: followers stat correct', document.getElementById('stat-followers').textContent, '1000');
+    t.assertEqual('Large dataset: following stat correct', document.getElementById('stat-following').textContent, '1200');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 16: Edge Cases — Duplicate Handling
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Edge Cases — Duplicate Handling');
+  {
+    const app = freshApp();
+    // Followers with duplicates (Set handles this)
+    app.parseFollowers(JSON.stringify([
+      { string_list_data: [{ value: "dup_user" }] },
+      { string_list_data: [{ value: "dup_user" }] },
+      { string_list_data: [{ value: "DUP_USER" }] },
+      { string_list_data: [{ value: "unique_user" }] }
+    ]), false);
+    t.assertEqual('Follower dedup: 2 unique followers', app.followers.size, 2);
+
+    // Following with duplicates
+    app.following = [];
+    app.parseFollowing(JSON.stringify({
+      relationships_following: [
+        { string_list_data: [{ value: "dup_follow" }] },
+        { string_list_data: [{ value: "DUP_FOLLOW" }] },
+        { string_list_data: [{ value: "unique_follow" }] }
+      ]
+    }), false);
+    // Before processNonFollowers, following may have duplicates
+    t.assertEqual('Following before dedup: 3 entries', app.following.length, 3);
+    
+    app.processNonFollowers();
+    // After processNonFollowers, following should be deduped
+    t.assertEqual('Following after dedup: 2 entries', app.following.length, 2);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 17: Edge Cases — Special Characters in Usernames
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Edge Cases — Special Characters');
+  {
+    const app = freshApp();
+    app.followers = new Set(['user.with.dots', 'user_underscores', 'user123numbers']);
+    app.following = [
+      { username: 'user.with.dots', normalizedUsername: 'user.with.dots' },
+      { username: 'user_underscores', normalizedUsername: 'user_underscores' },
+      { username: 'user123numbers', normalizedUsername: 'user123numbers' },
+      { username: 'new.user', normalizedUsername: 'new.user' }
+    ];
+    app.processNonFollowers();
+    t.assertEqual('Special chars: only new.user is non-follower', app.nonFollowers.length, 1);
+    t.assertEqual('Special chars: correct non-follower', app.nonFollowers[0].username, 'new.user');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 18: CSV Export Validation
+  // ═══════════════════════════════════════════════════════════════
+  t.section('CSV Export');
+  {
+    const app = freshApp();
+    // Ensure export doesn't crash with empty list
+    t.assertDoesNotThrow('Export with empty list does not crash', () => {
+      app.exportToCSV();
+    });
+
+    // With data
+    app.followers = new Set();
+    app.following = [
+      { username: 'csv_user1', normalizedUsername: 'csv_user1' },
+      { username: 'csv_user2', normalizedUsername: 'csv_user2' }
+    ];
+    app.processNonFollowers();
+    t.assertEqual('CSV export: 2 non-followers ready', app.nonFollowers.length, 2);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 19: HTML Escape (XSS Prevention)
+  // ═══════════════════════════════════════════════════════════════
+  t.section('XSS Prevention');
+  {
+    const app = freshApp();
+    t.assertEqual('Escapes < >', app._escapeHtml('<script>'), '&lt;script&gt;');
+    t.assertEqual('Escapes quotes', app._escapeHtml('"hello"'), '&quot;hello&quot;');
+    t.assertEqual('Escapes ampersand', app._escapeHtml('a&b'), 'a&amp;b');
+    t.assertEqual('Null input returns empty', app._escapeHtml(null), '');
+    t.assertEqual('Undefined input returns empty', app._escapeHtml(undefined), '');
+    t.assertEqual('Empty string unchanged', app._escapeHtml(''), '');
+    t.assertEqual('Normal text unchanged', app._escapeHtml('hello'), 'hello');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 20: Status Updates
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Status Updates');
+  {
+    const app = freshApp();
+    app.updateStatus('Test message');
+    t.assertEqual('Status text updated', document.getElementById('status-text').textContent, 'Test message');
+    t.assert('Status container visible', !document.getElementById('status-container').classList.contains('hidden'));
+    t.assertContains('Normal status: purple class', document.getElementById('status-text').className, 'text-purple-400');
+
+    app.updateStatus('Error message', true);
+    t.assertContains('Error status: red class', document.getElementById('status-text').className, 'text-red-400');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 21: Accumulated Follower Parsing (Paginated Files)
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Paginated File Accumulation');
+  {
+    const app = freshApp();
+    
+    // Simulate parsing two separate follower files (paginated)
+    app.parseFollowers(JSON.stringify([
+      { string_list_data: [{ value: "page1_user1" }] },
+      { string_list_data: [{ value: "page1_user2" }] }
+    ]), false);
+    
+    app.parseFollowers(JSON.stringify([
+      { string_list_data: [{ value: "page2_user1" }] },
+      { string_list_data: [{ value: "page2_user2" }] }
+    ]), false);
+    
+    t.assertEqual('Paginated followers: all 4 accumulated', app.followers.size, 4);
+    t.assert('page1_user1 present', app.followers.has('page1_user1'));
+    t.assert('page2_user2 present', app.followers.has('page2_user2'));
+
+    // Simulate parsing two following files
+    app.following = [];
+    app.parseFollowing(JSON.stringify({
+      relationships_following: [
+        { string_list_data: [{ value: "follow_p1" }] }
+      ]
+    }), false);
+    
+    app.parseFollowing(JSON.stringify({
+      relationships_following: [
+        { string_list_data: [{ value: "follow_p2" }] }
+      ]
+    }), false);
+    
+    t.assertEqual('Paginated following: all 2 accumulated', app.following.length, 2);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 22: End-to-End Integration — Realistic Scenario
+  // ═══════════════════════════════════════════════════════════════
+  t.section('End-to-End Integration — Realistic Instagram Export');
+  {
+    const app = freshApp();
+    
+    // Simulate a realistic Instagram export with followers and following
+    const followersData = JSON.stringify([
+      { string_list_data: [{ href: "https://www.instagram.com/real_friend1", value: "real_friend1", timestamp: 1700000000 }] },
+      { string_list_data: [{ href: "https://www.instagram.com/real_friend2", value: "Real_Friend2", timestamp: 1700000001 }] },
+      { string_list_data: [{ href: "https://www.instagram.com/mutual_follow", value: "mutual_follow", timestamp: 1700000002 }] },
+      { string_list_data: [{ href: "https://www.instagram.com/bestie", value: "@bestie", timestamp: 1700000003 }] }
+    ]);
+    
+    const followingData = JSON.stringify({
+      relationships_following: [
+        { string_list_data: [{ href: "https://www.instagram.com/real_friend1", value: "real_friend1", timestamp: 1700000000 }] },
+        { string_list_data: [{ href: "https://www.instagram.com/celebrity", value: "celebrity", timestamp: 1700000001 }] },
+        { string_list_data: [{ href: "https://www.instagram.com/brand_page", value: "brand_page", timestamp: 1700000002 }] },
+        { string_list_data: [{ href: "https://www.instagram.com/mutual_follow", value: "Mutual_Follow", timestamp: 1700000003 }] },
+        { string_list_data: [{ href: "https://www.instagram.com/bestie", value: "@Bestie", timestamp: 1700000004 }] },
+        { string_list_data: [{ href: "https://www.instagram.com/influencer", value: "influencer", timestamp: 1700000005 }] }
+      ]
+    });
+    
+    app.parseFollowers(followersData, false);
+    app.parseFollowing(followingData, false);
+    app.processNonFollowers();
+    
+    t.assertEqual('E2E: 4 followers', app.followers.size, 4);
+    t.assertEqual('E2E: 6 following', app.following.length, 6);
+    t.assertEqual('E2E: 3 non-followers (celebrity, brand_page, influencer)', app.nonFollowers.length, 3);
+    
+    // real_friend1 follows back — should NOT be in non-followers
+    t.assert('E2E: real_friend1 NOT in non-followers', !app.nonFollowers.some(u => u.normalizedUsername === 'real_friend1'));
+    
+    // mutual_follow follows back (case-insensitive match) — should NOT be in non-followers
+    t.assert('E2E: mutual_follow NOT in non-followers (case-insensitive)', !app.nonFollowers.some(u => u.normalizedUsername === 'mutual_follow'));
+    
+    // bestie follows back (@ prefix handled) — should NOT be in non-followers
+    t.assert('E2E: bestie NOT in non-followers (@ stripped)', !app.nonFollowers.some(u => u.normalizedUsername === 'bestie'));
+    
+    // celebrity, brand_page, influencer don't follow back
+    t.assert('E2E: celebrity IS non-follower', app.nonFollowers.some(u => u.normalizedUsername === 'celebrity'));
+    t.assert('E2E: brand_page IS non-follower', app.nonFollowers.some(u => u.normalizedUsername === 'brand_page'));
+    t.assert('E2E: influencer IS non-follower', app.nonFollowers.some(u => u.normalizedUsername === 'influencer'));
+
+    // Profile URLs for non-followers should be valid
+    app.nonFollowers.forEach(nf => {
+      const url = app.getProfileUrl(nf.username);
+      t.assertContains(`E2E: Profile URL for ${nf.username} is valid`, url, 'https://www.instagram.com/');
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 23: Constructor & Initialization Safety
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Constructor & Initialization Safety');
+  {
+    // Corrupted localStorage
+    localStorage.setItem('instacheck_whitelist', 'not valid json!!!');
+    let app1;
+    t.assertDoesNotThrow('Corrupted localStorage does not crash constructor', () => {
+      app1 = new InstaCheckApp();
+    });
+    t.assertEqual('Corrupted localStorage: empty whitelist', app1.whitelisted.size, 0);
+
+    // Non-array localStorage
+    localStorage.setItem('instacheck_whitelist', JSON.stringify({ not: "an array" }));
+    let app2;
+    t.assertDoesNotThrow('Non-array localStorage does not crash', () => {
+      app2 = new InstaCheckApp();
+    });
+    t.assertEqual('Non-array localStorage: empty whitelist', app2.whitelisted.size, 0);
+
+    // Array with non-string elements
+    localStorage.setItem('instacheck_whitelist', JSON.stringify(["valid", 123, null, "", "also_valid"]));
+    let app3;
+    t.assertDoesNotThrow('Mixed type array does not crash', () => {
+      app3 = new InstaCheckApp();
+    });
+    t.assertEqual('Mixed type array: only valid strings loaded', app3.whitelisted.size, 2);
+
+    localStorage.removeItem('instacheck_whitelist');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 24: Demo Data Integrity
+  // ═══════════════════════════════════════════════════════════════
+  t.section('Demo Data Integrity');
+  {
+    const demo = window.InstaCheckDemo.getSampleData();
+    t.assert('Demo data has followers array', Array.isArray(demo.followers));
+    t.assert('Demo data has following array', Array.isArray(demo.following));
+    t.assert('Demo followers has at least 1 entry', demo.followers.length >= 1);
+    t.assert('Demo following has at least 1 entry', demo.following.length >= 1);
+    
+    // All followers have username
+    demo.followers.forEach(f => {
+      t.assert(`Follower ${f.username} has username`, typeof f.username === 'string' && f.username.length > 0);
+    });
+    
+    // All following have username
+    demo.following.forEach(f => {
+      t.assert(`Following ${f.username} has username`, typeof f.username === 'string' && f.username.length > 0);
+    });
+
+    // Some followers should be in following list (mutual follows)
+    const followerSet = new Set(demo.followers.map(f => f.username.toLowerCase()));
+    const mutuals = demo.following.filter(f => followerSet.has(f.username.toLowerCase()));
+    t.assert('Demo has mutual follows', mutuals.length > 0);
+
+    // Some following should NOT be in followers (non-followers for demo)
+    const nonMutuals = demo.following.filter(f => !followerSet.has(f.username.toLowerCase()));
+    t.assert('Demo has non-followers for display', nonMutuals.length > 0);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 25: extractUsernameFromElement edge cases
+  // ═══════════════════════════════════════════════════════════════
+  t.section('extractUsernameFromElement');
+  {
+    const app = freshApp();
+    
+    // Null element
+    t.assertEqual('Null element returns empty', app.extractUsernameFromElement(null), '');
+    
+    // Element with text
+    const el1 = document.createElement('a');
+    el1.textContent = 'testuser';
+    el1.setAttribute('href', 'https://www.instagram.com/testuser');
+    t.assertEqual('Text content takes priority', app.extractUsernameFromElement(el1), 'testuser');
+    
+    // Element with only href (no text)
+    const el2 = document.createElement('a');
+    el2.setAttribute('href', 'https://www.instagram.com/hrefuser');
+    t.assertEqual('Falls back to href', app.extractUsernameFromElement(el2), 'hrefuser');
+    
+    // Element with empty href
+    const el3 = document.createElement('a');
+    el3.textContent = 'textuser';
+    t.assertEqual('Text without href', app.extractUsernameFromElement(el3), 'textuser');
+    
+    // Element with @ in text
+    const el4 = document.createElement('a');
+    el4.textContent = '@at_user';
+    t.assertEqual('@ stripped from textContent', app.extractUsernameFromElement(el4), 'at_user');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SECTION 26: handleZipFile Validation
+  // ═══════════════════════════════════════════════════════════════
+  t.section('handleZipFile Input Validation');
+  {
+    const app = freshApp();
+    
+    // Non-zip file
+    const fakeFile = new File(['data'], 'test.txt', { type: 'text/plain' });
+    t.assertDoesNotThrow('Non-zip file handled gracefully', () => {
+      app.handleZipFile(fakeFile);
+    });
+    
+    // Null file
+    t.assertDoesNotThrow('Null file handled gracefully', () => {
+      app.handleZipFile(null);
+    });
+    
+    // Empty zip (size 0)
+    const emptyFile = new File([], 'test.zip', { type: 'application/zip' });
+    t.assertDoesNotThrow('Empty zip handled gracefully', async () => {
+      await app.handleZipFile(emptyFile);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // DONE - Render results
+  // ═══════════════════════════════════════════════════════════════
+  t.render();
+  document.getElementById('run-btn').disabled = false;
+  
+  // Log summary to console
+  const passed = t.results.filter(r => r.passed).length;
+  const total = t.results.length;
+  console.log(`\n==== TEST RESULTS: ${passed}/${total} passed ====\n`);
+  t.results.filter(r => !r.passed).forEach(r => {
+    console.error(`FAIL: [${r.section}] ${r.description}`);
+  });
+}
+
+// Auto-run on page load
+window.addEventListener('load', runAllTests);
+</script>
+
+</body>
+</html>

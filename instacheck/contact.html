@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report a Bug & Support - InstaCheck</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/asset/css/styles.css">
+</head>
+
+<body class="bg-[#0b0e14] text-gray-100 min-h-screen flex flex-col">
+
+  <header class="sticky top-0 z-50 glass-panel rounded-none border-x-0 border-t-0">
+    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+      <a href="index.html" class="text-2xl font-extrabold text-gradient">InstaCheck</a>
+      <nav class="hidden md:flex space-x-6 text-sm font-medium">
+        <a href="index.html" class="hover:text-purple-400">Dashboard</a>
+        <a href="how-it-works.html" class="hover:text-purple-400">How It Works</a>
+        <a href="privacy-architecture.html" class="hover:text-purple-400">Privacy Architecture</a>
+        <a href="faq.html" class="hover:text-purple-400">FAQ</a>
+        <a href="blog.html" class="hover:text-purple-400">Guides</a>
+        <a href="contact.html" class="text-purple-400 font-bold">Support</a>
+      </nav>
+      <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-300">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+        </svg>
+      </button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden px-4 pb-4 pt-2 space-y-2 border-t border-gray-800 bg-[#0b0e14]">
+      <a href="index.html" class="block py-2">Dashboard</a>
+      <a href="how-it-works.html" class="block py-2">How It Works</a>
+      <a href="privacy-architecture.html" class="block py-2">Privacy Architecture</a>
+      <a href="faq.html" class="block py-2">FAQ</a>
+      <a href="blog.html" class="block py-2">Guides</a>
+      <a href="contact.html" class="block py-2 text-purple-400 font-bold">Support</a>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-3xl mx-auto px-4 py-8 w-full">
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest">Ad Banner Slot</div>
+
+    <h1 class="text-3xl font-extrabold mb-2 text-gradient">Report a Bug / Contact Developer</h1>
+    <p class="text-gray-400 text-sm mb-8">Found an issue parsing your archive file? Send a direct message to the
+      developer.</p>
+
+    <!-- Bug Form Container -->
+    <form class="glass-panel p-6 space-y-4"
+      onsubmit="event.preventDefault(); alert('Thank you! Your bug report has been submitted.');">
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1">Your Email Address</label>
+        <input type="email" required placeholder="you@example.com"
+          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1">Browser & Device Details</label>
+        <input type="text" placeholder="e.g. Chrome 122 on Android / Safari on Mac"
+          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1">Issue Description</label>
+        <textarea rows="4" required placeholder="Describe what happened or paste any error message..."
+          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500"></textarea>
+      </div>
+
+      <button type="submit"
+        class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 rounded-lg shadow-lg hover:opacity-90 transition">
+        Submit Bug Report
+      </button>
+    </form>
+
+    <!-- Direct Email Fallback -->
+
+
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest">Ad Banner Slot</div>
+  </main>
+
+  <footer class="glass-panel rounded-none border-x-0 border-b-0 mt-auto py-6 text-center text-xs text-gray-400">
+    <p>© <span id="current-year"></span> InstaCheck. Developer Support.</p>
+  </footer>
+
+</body>
+
+</html>

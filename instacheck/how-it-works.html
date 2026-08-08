@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How To Request Instagram Data - InstaCheck</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/asset/css/styles.css">
+</head>
+<body class="bg-[#0b0e14] text-gray-100 min-h-screen flex flex-col">
+
+  <header class="sticky top-0 z-50 glass-panel rounded-none border-x-0 border-t-0">
+    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+      <a href="index.html" class="text-2xl font-extrabold text-gradient">InstaCheck</a>
+      <nav class="hidden md:flex space-x-6 text-sm font-medium">
+        <a href="index.html" class="hover:text-purple-400 transition">Dashboard</a>
+        <a href="how-it-works.html" class="text-purple-400 font-bold">How It Works</a>
+        <a href="privacy-architecture.html" class="hover:text-purple-400 transition">Privacy Architecture</a>
+        <a href="faq.html" class="hover:text-purple-400 transition">FAQ</a>
+        <a href="blog.html" class="hover:text-purple-400 transition">Guides</a>
+        <a href="contact.html" class="hover:text-purple-400 transition">Support</a>
+      </nav>
+      <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-300">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+      </button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden px-4 pb-4 pt-2 space-y-2 border-t border-gray-800 bg-[#0b0e14]">
+      <a href="index.html" class="block py-2">Dashboard</a>
+      <a href="how-it-works.html" class="block py-2 text-purple-400 font-bold">How It Works</a>
+      <a href="privacy-architecture.html" class="block py-2">Privacy Architecture</a>
+      <a href="faq.html" class="block py-2">FAQ</a>
+      <a href="blog.html" class="block py-2">Guides</a>
+      <a href="contact.html" class="block py-2">Support</a>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-4xl mx-auto px-4 py-8 w-full">
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest">Ad Banner Slot</div>
+
+    <h1 class="text-3xl font-extrabold mb-6 text-gradient">Step-by-Step Guide: Exporting Your Instagram Data</h1>
+    
+    <div class="space-y-6 text-gray-300 text-sm sm:text-base">
+      
+      <div class="glass-panel p-6 space-y-3">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <span class="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">1</span>
+          Open Accounts Center
+        </h2>
+        <p>In your Instagram mobile app or desktop browser, navigate to <strong>Settings & Privacy</strong> &gt; <strong>Accounts Center</strong> &gt; <strong>Your Information and Permissions</strong>.</p>
+      </div>
+
+      <div class="glass-panel p-6 space-y-3">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <span class="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">2</span>
+          Download Your Information
+        </h2>
+        <p>Select <strong>Download Your Information</strong>, then click <strong>Request a Download</strong>. Choose <em>"Some of your information"</em> to speed up processing.</p>
+      </div>
+
+      <div class="glass-panel p-6 space-y-3">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <span class="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">3</span>
+          Select Followers & Following
+        </h2>
+        <p>Scroll down and select <strong>Connections &gt; Followers and Following</strong>. Set Format to <strong>JSON</strong> (or HTML) and Date Range to <strong>All Time</strong>.</p>
+      </div>
+
+      <div class="glass-panel p-6 space-y-3">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <span class="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">4</span>
+          Upload .ZIP to InstaCheck
+        </h2>
+        <p>Once Meta emails you the download link (takes ~5 minutes), download the <code class="bg-gray-800 px-2 py-1 text-purple-300 rounded">.zip</code> file to your device and drag it directly into InstaCheck.</p>
+      </div>
+
+    </div>
+
+    <div class="mt-8 text-center">
+      <a href="index.html" class="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:opacity-90 transition">
+        Return to Tool & Upload Data
+      </a>
+    </div>
+
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest">Ad Banner Slot</div>
+  </main>
+
+  <footer class="glass-panel rounded-none border-x-0 border-b-0 mt-auto py-6 text-center text-xs text-gray-400">
+    <p>© <span id="current-year"></span> InstaCheck. Local processing utility.</p>
+  </footer>
+
+</body>
+</html>

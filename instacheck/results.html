@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Results - InstaCheck Instagram Analytics</title>
+  <meta name="description" content="Instagram Non-Followers Analysis Results">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/asset/css/styles.css">
+</head>
+<body class="bg-[#0b0e14] text-gray-100 min-h-screen flex flex-col">
+
+  <!-- Responsive Navigation -->
+  <header class="sticky top-0 z-50 glass-panel rounded-none border-x-0 border-t-0">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <a href="/" class="flex items-center space-x-2">
+        <span class="text-2xl font-extrabold text-gradient">InstaCheck</span>
+        <span class="text-xs bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">Results</span>
+      </a>
+
+      <nav class="flex items-center space-x-4">
+        <a href="/" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition flex items-center space-x-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          <span>Upload Another ZIP</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    
+    <!-- Top Banner -->
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest mb-6">
+      Responsive Advertisement Banner Slot
+    </div>
+
+    <!-- Header Section -->
+    <div class="my-6 text-center max-w-3xl mx-auto">
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">
+        Instagram <span class="text-gradient">Analysis Results</span>
+      </h1>
+      <p class="text-gray-400 text-sm">
+        Below is the list of Instagram accounts you follow that do not follow you back. Click any profile to open it directly on Instagram.
+      </p>
+    </div>
+
+    <!-- Dashboard Metrics Grid -->
+    <section class="my-8 space-y-8">
+      
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="glass-panel p-6 text-center">
+          <p class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Total Followers</p>
+          <p id="stat-followers" class="text-4xl font-extrabold text-white mt-2">0</p>
+        </div>
+        <div class="glass-panel p-6 text-center">
+          <p class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Total Following</p>
+          <p id="stat-following" class="text-4xl font-extrabold text-white mt-2">0</p>
+        </div>
+        <div class="glass-panel p-6 text-center border-pink-500/40 bg-pink-950/10">
+          <p class="text-xs uppercase tracking-wider text-pink-400 font-semibold">Not Following Back</p>
+          <p id="stat-nonfollowers" class="text-4xl font-extrabold text-pink-500 mt-2">0</p>
+        </div>
+      </div>
+
+      <!-- Toolbar / Title -->
+      <div class="glass-panel p-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-gray-100">Non-Followers List</h2>
+          <p class="text-xs text-gray-400">Click any profile card or 'Instagram' button to redirect to their profile page</p>
+        </div>
+        <span id="badge-count" class="text-xs bg-pink-900/50 text-pink-300 px-3 py-1 rounded-full border border-pink-500/30 font-bold">
+          0 Accounts
+        </span>
+      </div>
+
+      <!-- Non-Followers Grid -->
+      <div id="results-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      </div>
+
+      <!-- Action Button -->
+      <div class="mt-8 text-center">
+        <a href="/" class="inline-flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-semibold px-6 py-3 rounded-lg border border-gray-700 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          <span>Upload Another File</span>
+        </a>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="glass-panel rounded-none border-x-0 border-b-0 mt-auto py-6">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-gray-400 space-y-3">
+      <div class="flex justify-center space-x-6">
+        <a href="/privacy-architecture.html" class="hover:underline">Privacy Policy</a>
+        <a href="/how-it-works.html" class="hover:underline">How It Works</a>
+        <a href="/faq.html" class="hover:underline">FAQ</a>
+        <a href="/contact.html" class="hover:underline">Contact Developer</a>
+      </div>
+      <p>© InstaCheck. Independent open utility. Not affiliated with Instagram or Meta Platforms, Inc.</p>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const rawData = sessionStorage.getItem('instacheck_results');
+      if (!rawData) {
+        window.location.href = '/';
+        return;
+      }
+
+      const data = JSON.parse(rawData);
+      document.getElementById('stat-followers').textContent = data.total_followers || 0;
+      document.getElementById('stat-following').textContent = data.total_following || 0;
+      document.getElementById('stat-nonfollowers').textContent = data.non_follower_count || 0;
+      document.getElementById('badge-count').textContent = `${data.non_follower_count || 0} Accounts`;
+
+      const grid = document.getElementById('results-grid');
+      const list = data.non_followers || [];
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full glass-panel p-10 text-center text-gray-400 text-sm">
+            All accounts you follow are following you back.
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = list.map(link => {
+        const parts = link.replace(/\/$/, '').split('/');
+        const username = parts[parts.length - 1] || link;
+        const initial = username.charAt(0).toUpperCase();
+
+        return `
+          <div class="glass-panel p-5 flex items-center justify-between hover:border-purple-500/50 transition group shadow-md">
+            <a href="${link}" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 overflow-hidden flex-grow min-w-0 mr-3">
+              <div class="w-10 h-10 shrink-0 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center font-bold text-white uppercase text-sm shadow-inner">
+                ${initial}
+              </div>
+              <div class="truncate">
+                <h3 class="font-semibold text-sm text-white group-hover:text-purple-300 transition truncate">${username}</h3>
+                <p class="text-xs text-pink-400/90 truncate">Does not follow back</p>
+              </div>
+            </a>
+            <a href="${link}" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3.5 py-2 rounded-lg text-xs font-semibold border border-purple-500/40 transition flex items-center space-x-1 shadow">
+              <span>Instagram</span>
+              <svg class="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+            </a>
+          </div>
+        `;
+      }).join('');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Insta Non-Followers</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; }
+        textarea { width: 100%; font-family: monospace; }
+        .result { margin-top: 24px; }
+        .result ul { list-style: disc; margin-left: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Insta Non-Followers</h1>
+
+    <p>Paste your followers and following HTML content below, then submit. Django will pass the data to the <code>insta</code> class in <code>Module.py</code>.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Compute Non-Followers</button>
+    </form>
+
+    {% if result %}
+        <div class="result">
+            <h2>Result</h2>
+            <p><strong>Total followers:</strong> {{ result.total_followers }}</p>
+            <p><strong>Total following:</strong> {{ result.total_following }}</p>
+            <p><strong>Non-follower count:</strong> {{ result.non_follower_count }}</p>
+
+            <h3>Non-followers</h3>
+            {% if result.non_followers %}
+                <ul>
+                    {% for username in result.non_followers %}
+                        <li>{{ username }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No non-followers found.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</body>
+</html>

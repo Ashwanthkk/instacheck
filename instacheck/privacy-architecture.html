@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy & Local Security Architecture - InstaCheck</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/asset/css/styles.css">
+</head>
+<body class="bg-[#0b0e14] text-gray-100 min-h-screen flex flex-col">
+
+  <header class="sticky top-0 z-50 glass-panel rounded-none border-x-0 border-t-0">
+    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+      <a href="index.html" class="text-2xl font-extrabold text-gradient">InstaCheck</a>
+      <nav class="hidden md:flex space-x-6 text-sm font-medium">
+        <a href="index.html" class="hover:text-purple-400">Dashboard</a>
+        <a href="how-it-works.html" class="hover:text-purple-400">How It Works</a>
+        <a href="privacy-architecture.html" class="text-purple-400 font-bold">Privacy Architecture</a>
+        <a href="faq.html" class="hover:text-purple-400">FAQ</a>
+        <a href="blog.html" class="hover:text-purple-400">Guides</a>
+        <a href="contact.html" class="hover:text-purple-400">Support</a>
+      </nav>
+      <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-300">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+      </button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden px-4 pb-4 pt-2 space-y-2 border-t border-gray-800 bg-[#0b0e14]">
+      <a href="index.html" class="block py-2">Dashboard</a>
+      <a href="how-it-works.html" class="block py-2">How It Works</a>
+      <a href="privacy-architecture.html" class="block py-2 text-purple-400 font-bold">Privacy Architecture</a>
+      <a href="faq.html" class="block py-2">FAQ</a>
+      <a href="blog.html" class="block py-2">Guides</a>
+      <a href="contact.html" class="block py-2">Support</a>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-4xl mx-auto px-4 py-8 w-full">
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest">Ad Banner Slot</div>
+
+    <h1 class="text-3xl font-extrabold mb-6 text-gradient">Zero-Server Technical Architecture</h1>
+
+    <div class="space-y-6 text-gray-300 text-sm sm:text-base leading-relaxed">
+      
+      <div class="glass-panel p-6">
+        <h2 class="text-xl font-bold text-white mb-3">1. No Passwords or Logins Required</h2>
+        <p>Traditional follower apps require entering your Instagram password or session cookies. This grants third-party servers full access to your account, resulting in compromised credentials or Instagram account action blocks. InstaCheck never asks for credentials.</p>
+      </div>
+
+      <div class="glass-panel p-6">
+        <h2 class="text-xl font-bold text-white mb-3">2. Web APIs & Client Memory Execution</h2>
+        <p>InstaCheck uses native browser web APIs (<code>FileReader</code>, <code>DOMParser</code>, and WebAssembly-backed <code>JSZip</code>). When you select a Zip archive, the browser reads the binary stream strictly inside RAM memory. No network packets carrying your personal information are dispatched.</p>
+      </div>
+
+      <div class="glass-panel p-6">
+        <h2 class="text-xl font-bold text-white mb-3">3. How to Audit Security Yourself</h2>
+        <p>You can independently verify zero external network transmission using browser Developer Tools:</p>
+        <ol class="list-decimal list-inside mt-3 space-y-2 text-gray-400">
+          <li>Press <kbd class="bg-gray-800 px-2 py-0.5 rounded text-white">F12</kbd> or right-click and select <strong>Inspect</strong>.</li>
+          <li>Navigate to the <strong>Network</strong> tab.</li>
+          <li>Upload your Instagram data zip file into InstaCheck.</li>
+          <li>Notice that zero HTTP requests (`POST` or `GET`) are created during the entire file parsing process.</li>
+        </ol>
+      </div>
+
+    </div>
+
+    <div class="adsense-banner text-gray-500 text-xs uppercase tracking-widest">Ad Banner Slot</div>
+  </main>
+
+  <footer class="glass-panel rounded-none border-x-0 border-b-0 mt-auto py-6 text-center text-xs text-gray-400">
+    <p>© <span id="current-year"></span> InstaCheck. Open & Verifiable Architecture.</p>
+  </footer>
+
+</body>
+</html>
