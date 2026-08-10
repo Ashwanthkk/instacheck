@@ -107,7 +107,7 @@ if __name__ == "__main__":
     import glob
     import os
 
-    folder = r"C:\Users\ashwa\Downloads\instagram-ashwanth.__-2026-08-03-md74j7JT\connections\followers_and_following"
+    folder = r"instagram-ashwanth.__-2026-08-03-md74j7JT\connections\followers_and_following"
     followers = []
 
     for file in glob.glob(os.path.join(folder, "followers_*.json")):
@@ -126,6 +126,6 @@ if __name__ == "__main__":
     print(f"Non Followers Count : {total_non_followers}")
 
     print("\nNon Followers (Profile Links):\n")
-'''
+
     for link in non_followers:
-        print(link)'''
+        print(link)
